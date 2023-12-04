@@ -2,10 +2,7 @@ package com.innogent.rishii.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innogent.rishii.customException.*;
-import com.innogent.rishii.dtos.AssetPayload;
-import com.innogent.rishii.dtos.AssetResponsePayload;
-import com.innogent.rishii.dtos.CategoryResponsePayload;
-import com.innogent.rishii.dtos.UpdateAssetsPayload;
+import com.innogent.rishii.dtos.*;
 import com.innogent.rishii.entities.Assets;
 import com.innogent.rishii.entities.AssignedAssets;
 import com.innogent.rishii.entities.Categories;
@@ -109,23 +106,23 @@ public class AssetController {
             return new ResponseEntity<>(new CustomResponse<>(updateStatus," Assets Updated successfully",null), HttpStatus.OK);
         }
         catch (UserNotFoundException e) {
-            log.error("UUID {}, UserNotFoundException in Update Assert API, Exception {}", debugUuid, e.getMessage());
+            log.error("UUID {}, UserNotFoundException in Update Asset API, Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
         }
         catch (CategoryNotFoundException e) {
-            log.error("UUID {}, CategoryNotFoundException in Update Assert API, Exception {}", debugUuid, e.getMessage());
+            log.error("UUID {}, CategoryNotFoundException in Update Asset API, Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
         }
         catch (CompanyNotFoundException e) {
-            log.error("UUID {}, CompanyNotFoundException in Update Assert  API, Exception {}", debugUuid, e.getMessage());
+            log.error("UUID {}, CompanyNotFoundException in Update Asset  API, Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
         }
         catch (AssetsNotFoundException e) {
-            log.error("UUID {}, AssetsNotFoundException in Update Assert  API, Exception {}", debugUuid, e.getMessage());
+            log.error("UUID {}, AssetsNotFoundException in Update Asset  API, Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
         }
         catch (Exception e) {
-            log.error("UUID {} Exception In Update Assert API Exception {}", debugUuid, e.getMessage());
+            log.error("UUID {} Exception In Update Asset API Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
         }
     }
@@ -155,6 +152,89 @@ public class AssetController {
         }
         catch (Exception e) {
             log.error("UUID {} Exception Delete Asset API Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * For  Getting Recovered Assets  By CompanyId
+     *
+     * @return ResponseEntity
+     */
+    @GetMapping("/recovered/{companyId}")
+    public ResponseEntity<?> getRecoveredAssetsByCompanyId(@Valid @PathVariable("companyId") Long companyId) {
+        String debugUuid = UUID.randomUUID().toString();
+        try {
+            log.info("Get Recovered Assets  By CompanyId API Called, UUID {}", debugUuid);
+            List<AssetResponsePayload> categoriesList= assetService.getRecoveredAssetsByCompanyId(companyId);
+            return new ResponseEntity<>(new CustomResponse<>(true,"Recovered Assets fetched",categoriesList), HttpStatus.OK);
+        }
+        catch (AssetsNotFoundException e) {
+            log.error("UUID {}  Get Assets Recovered By CompanyId API AssetsNotFoundException {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
+        }
+        catch (Exception e) {
+            log.error("UUID {} Exception In Get Recovered Assets By CompanyId API Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * For  Updating Asset Status
+     *
+     * @return ResponseEntity
+     */
+    @PutMapping("/status/{assetId}")
+    public ResponseEntity<?> updateAssetStatus(
+            @PathVariable("assetId") Long assetId,
+            @Valid @RequestBody UpdateAssetStatusPayload updateAssetStatusPayload) {
+        String debugUuid = UUID.randomUUID().toString();
+        try {
+            log.info("Update Asset Status API Called, UUID {}", debugUuid);
+            Boolean updateStatus =assetService.updateAssetStatus(updateAssetStatusPayload,assetId);
+            return new ResponseEntity<>(new CustomResponse<>(updateStatus," Asset Status Updated successfully",null), HttpStatus.OK);
+        }
+        catch (AssetsNotFoundException e) {
+            log.error("UUID {}, AssetsNotFoundException in Update Asset Status API, Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
+        }
+        catch (NotRecoverableException e) {
+            log.error("UUID {}, NotRecoverableException in Update Asset Status API, Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception e) {
+            log.error("UUID {} Exception In Update Asset Status API Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    /**
+     * For  Adding More Recoverable Assets
+     *
+     * @return ResponseEntity
+     */
+    @PostMapping("/{groupId}/company/{companyId}")
+    public ResponseEntity<?> addMoreRecoverableAssets(
+            @PathVariable("groupId") Long groupId,
+            @PathVariable("companyId") Long companyId,
+           @Valid @RequestBody List< @Valid AssetItemsPayload> assetItemsPayload) {
+          String debugUuid = UUID.randomUUID().toString();
+        try {
+            log.info("Add More Recoverable Asset API Called, UUID {}", debugUuid);
+            List<AssetResponsePayload> savedAssets =assetService.addMoreRecoverableAssets(assetItemsPayload,groupId,companyId);
+            return new ResponseEntity<>(new CustomResponse<>(true,"Asset Added successfully",savedAssets), HttpStatus.CREATED);
+        }
+        catch (NotRecoverableException e) {
+            log.error("UUID {}, NotRecoverableException in Add More Recoverable Asset API, Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
+        }
+        catch (AssetsItemsNotFoundException e) {
+            log.error("UUID {}, AssetsItemsNotFoundException in Add More Recoverable Asset  API, Exception {}", debugUuid, e.getMessage());
+            return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.NOT_FOUND);
+        }
+        catch (Exception e) {
+            log.error("UUID {} Exception In Add More Recoverable Asset API Exception {}", debugUuid, e.getMessage());
             return new ResponseEntity<>(new CustomResponse<>(false,e.getMessage(),null), HttpStatus.BAD_REQUEST);
         }
     }

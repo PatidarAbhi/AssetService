@@ -17,9 +17,9 @@ import java.util.Optional;
 @Repository
 public interface AssignedAssetRepo extends JpaRepository<AssignedAssets, Long> {
 
-    List<AssignedAssets> findByAssignedTo(Long assignedTo);
+    List<AssignedAssets> findByAssignedToAndRecovered(Long assignedTo,Boolean recovered);
 
-    List<AssignedAssets> findByCompanyId(Long companyId);
+    List<AssignedAssets> findByCompanyIdAndRecovered(Long companyId,Boolean recovered);
 
     List<AssignedAssets> findByAssetIdAndRecovered(Long assetId,Boolean recovered);
 

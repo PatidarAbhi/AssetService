@@ -9,6 +9,7 @@ import com.innogent.rishii.entities.Company;
 import com.innogent.rishii.repo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -245,5 +246,103 @@ public class AssetService {
             log.error("Exception In Delete Category Service Exception {}", e.getMessage());
             throw e;
         }
+    }
+
+
+    /**
+     * For  Getting Recovered Assets  By CompanyId
+     *
+     * @return List<AssetResponsePayload>
+     */
+    public List<AssetResponsePayload> getRecoveredAssetsByCompanyId(Long companyId) {
+        String debugUuid = UUID.randomUUID().toString();
+        try {
+            List<Assets> optionalAssets = assetRepo.findByCompanyIdAndStatus(companyId,"Recovered");
+            if(optionalAssets.isEmpty())
+            {
+                log.info("AssetsNotFoundException Exception Get Recovered Assets Service");
+                throw new AssetsNotFoundException("Assets Not Found..");
+            }
+            return getResponse(optionalAssets);
+        } catch (Exception e) {
+            log.error("UUID {} Exception In Get Recovered Assets By CompanyId Service Exception {}", debugUuid, e.getMessage());
+            throw e;
+        }
+    }
+
+
+
+    /**
+     * For  Updating Asset Status
+     *
+     * @return Boolean
+     */
+    public Boolean updateAssetStatus(UpdateAssetStatusPayload updateAssetStatusPayload,
+                                        Long assetId) {
+        String debugUuid = UUID.randomUUID().toString();
+        try {
+            log.info("Update asset status Service Called , UUID {}", debugUuid);
+            Optional<Assets> optionalAssets = assetRepo.findByIdAndCompanyId(assetId, updateAssetStatusPayload.getCompanyId());
+            if (optionalAssets.isEmpty()) {
+                log.error("Update Asset Status Throwing AssetsNotFoundException {}", debugUuid);
+                throw new AssetsNotFoundException("Assets not found");
+            }
+            Assets existingAssets = optionalAssets.get();
+            if (!existingAssets.getRecoverable()) {
+                log.error("Update Asset Status Throwing NotRecoverableException {}", debugUuid);
+                throw new NotRecoverableException("Can Not Change Status Of Non Recoverable Assets.");
+            }
+            existingAssets.setStatus(updateAssetStatusPayload.getStatus());
+            existingAssets.setUpdatedAt(LocalDateTime.now());
+            assetRepo.save(existingAssets);
+            log.info("Update Asset Status Returning True");
+            return true;
+        } catch (Exception e) {
+            log.error("Exception In Update Asset Status Service Exception {}", e.getMessage());
+            throw e;
+        }
+    }
+
+
+    /**
+     * For Adding  More Recoverable Asset
+     *
+     * @return List<AssetResponsePayload>
+     */
+    public List<AssetResponsePayload> addMoreRecoverableAssets(List<AssetItemsPayload> assetItemsPayload,
+                                                               Long groupId, Long companyId) {
+            String debugUuid = UUID.randomUUID().toString();
+            try {
+                log.info("add More Recoverable Assets Service Called , UUID {}", debugUuid);
+                Optional<List<Assets>> optionalAssets=assetRepo.findByGroupIdAndCompanyId(groupId,companyId);
+                if(optionalAssets.get().isEmpty())
+                {
+                    log.info("add More Recoverable Assets Service Throw Called AssetsNotFoundException, UUID {}", debugUuid);
+                    throw new AssetsNotFoundException("Assets Not Found");
+                }
+                Assets existingAsset= optionalAssets.get().get(0);
+                if(!existingAsset.getRecoverable())
+                {
+                    log.error("Add More Recoverable Assets Service Throwing NotRecoverableException");
+                    throw new NotRecoverableException("Can Not Add More Assets For Non Recoverable Asset");
+                }
+                List<Assets> assetsList=new ArrayList<>();
+                for(AssetItemsPayload itemsPayload: assetItemsPayload)
+                {
+                    Assets assets =new Assets();
+                    BeanUtils.copyProperties(existingAsset,assets);
+                    assets.setId(null);
+                    assets.setCount(1L);
+                    assets.setUpdatedAt(LocalDateTime.now());
+                    assets.setCreatedAt(LocalDateTime.now());
+                    assets.setStatus(itemsPayload.getStatus());
+                    assets.setSerialId(itemsPayload.getSerialId());
+                    assetsList.add(assets);
+                }
+               return getResponse(assetRepo.saveAll(assetsList));
+            } catch (Exception e) {
+                log.error("Exception In Add More Recoverable Asset Service Exception {}", e.getMessage());
+                throw e;
+            }
     }
 }

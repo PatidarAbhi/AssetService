@@ -1,5 +1,4 @@
 package com.innogent.rishii.service;
-
 import com.innogent.rishii.customException.*;
 import com.innogent.rishii.dtos.*;
 import com.innogent.rishii.entities.Assets;
@@ -10,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -126,6 +124,8 @@ public class AssignedAssetService {
             responsePayload.setAssetId(assetResponsePayload);
             responsePayloads.add(responsePayload);
         }
+
+        log.info("Assigned Asset Service Returning AssignedAssetResponsePayloads {}", responsePayloads);
         return responsePayloads;
     }
 
@@ -144,12 +144,11 @@ public class AssignedAssetService {
                 log.info("Get Assigned Asset By UserID Service Throw UserNotFoundException , UserId {}", userId);
                 throw new UserNotFoundException("User Not Found..");
             }
-            return getAssignedAssetResponseList(assignedAssetRepo.findByAssignedTo(userId));
+            return getAssignedAssetResponseList(assignedAssetRepo.findByAssignedToAndRecovered(userId, false));
         } catch (Exception e) {
             log.error("Exception In Get Assigned Asset By UserID Service Exception {}", e.getMessage());
             throw e;
         }
-
     }
 
 
@@ -167,20 +166,24 @@ public class AssignedAssetService {
                 log.info("Get Assigned Asset By CompanyId Service Throw CompanyNotFoundException , CompanyId {}", companyId);
                 throw new CompanyNotFoundException("Company Not Found..");
             }
-            return getAssignedAssetResponseList(assignedAssetRepo.findByCompanyId(companyId));
+            List<AssignedAssetResponsePayload> assignedAssetResponsePayloads = getAssignedAssetResponseList
+                    (assignedAssetRepo.findByCompanyIdAndRecovered(companyId, false));
+            if (assignedAssetResponsePayloads.isEmpty()) {
+                throw new AssetsNotFoundException("Assets Not Found");
+            }
+            return assignedAssetResponsePayloads;
         } catch (Exception e) {
             log.error("Exception In Get Assigned Asset By CompanyId Service Exception {}", e.getMessage());
             throw e;
         }
     }
 
-
     /**
      * For  Recover Assigned Asset
      *
      * @return Boolean
      */
-    public Boolean recoverAssignedAsset(Long assignedAssetId,Long recoveredBy) {
+    public Boolean recoverAssignedAsset(Long assignedAssetId, Long recoveredBy) {
 
         String debugUuid = UUID.randomUUID().toString();
         try {
@@ -191,8 +194,7 @@ public class AssignedAssetService {
                         assignedAssetId);
                 throw new AssignedAssetNotFoundException("Assigned Asset Not Found..");
             }
-            if(assignedAsset.get().getRecovered())
-            {
+            if (assignedAsset.get().getRecovered()) {
                 log.info("Recover Assigned Asset By AssignedAssetIdService Throw NotRecoverableException , assignedAssetId {}",
                         assignedAssetId);
                 throw new NotRecoverableException("Asset Already Recovered..");
@@ -203,21 +205,20 @@ public class AssignedAssetService {
                         assignedAssetId);
                 throw new AssetsNotFoundException("Asset Not Found..");
             }
-            Assets assets= asset.get();
-            if(!asset.get().getRecoverable())
-            {
+            Assets assets = asset.get();
+            if (!asset.get().getRecoverable()) {
                 log.info("Recover Assigned Asset By AssignedAssetIdService Throw AssetsNotFoundException , Recoverable {}",
                         asset.get().getRecoverable());
                 throw new NotRecoverableException("Can Not Recovered A Non Recoverable Asset");
             }
-            assets.setCount(assets.getCount()+1);
+            assets.setCount(assets.getCount() + 1);
             assets.setStatus("Recovered");
             assetRepo.save(assets);
 
-            AssignedAssets assignedAssets= assignedAsset.get();
+            AssignedAssets assignedAssets = assignedAsset.get();
             assignedAssets.setRecovered(true);
             assignedAssets.setRecoveredAt(LocalDateTime.now());
-            log.info("Recovered by {} ",recoveredBy);
+            log.info("Recovered by {} ", recoveredBy);
             assignedAssets.setRecoveredBy(recoveredBy);
             assignedAssetRepo.save(assignedAssets);
             return true;

@@ -89,7 +89,7 @@ public class AssignedAssetController {
         try {
             log.info("Get Assign Asset By Company Id API Called, UUID {}", debugUuid);
             List<AssignedAssetResponsePayload> assignedAsset = assignedAssetService.getAssignedAssetOfCompany(companyId);
-            return new ResponseEntity<>(new CustomResponse<>(true,"Asset fetch successfully",assignedAsset), HttpStatus.CREATED);
+            return new ResponseEntity<>(new CustomResponse<>(true,"Asset fetch successfully",assignedAsset), HttpStatus.OK);
         }
         catch (CompanyNotFoundException e) {
             log.error("UUID {}, CompanyNotFoundException in Get Assign Asset By Company Id API, Exception {}", debugUuid, e.getMessage());

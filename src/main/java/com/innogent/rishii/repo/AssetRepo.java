@@ -39,6 +39,12 @@ public interface AssetRepo extends JpaRepository<Assets, Long> {
     Optional<Assets> findByIdAndCompanyId(Long assetId,
                                          Long companyId);
 
+//    @Query("SELECT a FROM Assets a JOIN AssignedAssets aa ON a.id = aa.assetId " +
+//            "WHERE a.companyId = :companyId AND aa.recovered = :recovered")
+//    List<Assets> findByCompanyIdAndRecovered(Long companyId, Boolean recovered);
+
+    List<Assets> findByCompanyIdAndStatus(Long companyId, String status);
+
 
 
 }
